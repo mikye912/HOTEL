@@ -1,0 +1,538 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="mySpace">
+ 
+ <!-- 찜목록 -->
+ <insert id="myFav" parameterType="hashMap">
+<![CDATA[ 
+INSERT INTO 
+LIKE_LIST(
+        USER_ID, 
+        SPACE_ID 
+)VALUES(
+        #{user_id}, 
+        #{space_id} 
+);
+]]>
+</insert>
+
+<!-- 찜목록 리스트 -->
+
+<select id="myFavList" parameterType="hashMap" resultType="hashMap">
+<![CDATA[ 
+	SELECT
+  		S.SPACE_ID,
+  		SPACE_IMG,
+  		SPACE_USE,
+  		SPACE_TITLE,
+  		SPACE_PRI,
+ 		 SPACE_POS 
+	FROM
+SPACE_LIST S 
+INNER JOIN 
+LIKE_LIST L
+ON 
+S.SPACE_ID = L.SPACE_ID 
+WHERE
+USER_ID = #{USER_ID}
+]]>
+</select>
+
+<!-- 찜목록 삭제 --> 
+<delete id="deleteFav" parameterType="hashmap">
+<![CDATA[ 
+	DELETE FROM LIKE_LIST WHERE SPACE_ID = #{SPACE_ID} 
+]]>
+</delete>
+
+<!-- 찜목록 수 -->
+<select id="countFavList" parameterType="hashmap" resultType="integer">
+<![CDATA[
+SELECT count(*)
+FROM
+	SPACE_LIST S
+WHERE
+	DEL_GB='N' and
+	S.USER_ID in
+]]> 
+</select> 
+ 
+ 
+<!-- =======================공간 관리 전체 리스트======================== -->
+	<select id="selectMySpaceList" parameterType="hashmap"
+		resultType="hashmap">
+	<include refid="common.pagingPre"></include>
+	<![CDATA[
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY SPACE_ID DESC) RNUM,
+			SPACE_ID,
+			SPACE_TITLE,
+			SPACE_SIZE,
+			SPACE_PRI,
+			SPACE_HOLD,
+			SPACE_IMG
+		FROM
+			SPACE_LIST
+		WHERE
+			SPACE_HOST = #{USER_ID}
+	]]>
+	<include refid="common.pagingPost"></include>
+	</select>
+<!-- =======================================공간 등록 글 삭제 -->
+	<update id="deleteSpaceBoard" parameterType="hashmap">
+	<![CDATA[
+		DELETE
+		FROM 
+			SPACE_LIST 
+		WHERE 
+			SPACE_ID = #{SPACE_ID}
+
+	]]>
+	</update>
+<!-- =======================================공간 신청 글 삭제 -->
+<update id="deleteApplyBoard" parameterType="hashmap">
+	<![CDATA[
+		DELETE
+		FROM 
+			SPACE_APPLY_LIST 
+		WHERE 
+			APPLY_NUM = #{SPACE_ID}
+
+	]]>
+</update>
+
+<!-- ==================================공간 신청 글 예약(요일) 삭제          [ 등록글 수정글 공통 부분 ] --> 
+<update id="deleteResDay" parameterType="hashmap">
+	<![CDATA[
+		DELETE
+		FROM 
+			SRES_DAY
+		WHERE
+			SPACE_ID = #{SPACE_ID}
+	]]>
+</update>
+
+<!-- ==================================공간 신청 글 예약(날짜)삭제  		[ 등록글 수정글 공통 부분 ] -->
+<select id="getSpaceID" parameterType="hashmap" resultType="string">
+<![CDATA[
+SELECT SPACE_ID_SEQ.NEXTVAL AS SAPCE_ID FROM DUAL
+
+]]>
+</select>
+<select id="selectSpaceBoard" parameterType="hashmap" resultType="hashmap">
+<![CDATA[
+	SELECT * FROM SPACE_LIST WHERE SPACE_ID = ${SPACE_ID}
+]]>
+</select>
+
+<select id="selectApplyBoard" parameterType="hashmap" resultType="string">
+<![CDATA[
+	SELECT APPLY_NUM FROM SPACE_APPLY_LIST WHERE APPLY_NUM = ${APPLY_NUM}
+]]>
+</select>
+<update id="updateModifyApplyInfo" parameterType="hashmap">
+<![CDATA[
+MERGE INTO SPACE_APPLY_LIST
+USING DUAL
+   ON (APPLY_NUM = #{APPLY_NUM})
+WHEN MATCHED THEN
+    UPDATE SET
+    APPLY_TITLE = #{APPLY_TITLE},
+  	APPLY_DETAIL = #{APPLY_DETAIL},
+  	APPLY_USE  = #{APPLY_USE},
+  	APPLY_IMG = #{APPLY_IMG},
+    APPLY_POS  = #{APPLY_POS},
+  	APPLY_PRI = #{APPLY_PRI},	 
+    APPLY_SIZE = #{APPLY_SIZE},
+    APPLY_OPT = #{APPLY_OPT},
+    ]]>
+    <if test="APPLY_TAG != null">
+    APPLY_TAG = #{APPLY_TAG},
+    </if>
+    <![CDATA[
+    APPLY_SEAT = #{APPLY_SEAT},
+    APPLY_PARKING = #{APPLY_PARKING},
+    APPLY_PERSON = #{APPLY_PERSON},
+    APPLY_HORIZON = #{APPLY_HORIZON},
+    APPLY_VERTICAL = #{APPLY_VERTICAL},
+    APPLY_HEIGHT = #{APPLY_HEIGHT},
+    APPLY_RES_TYPE = #{APPLY_RES_TYPE}
+WHEN NOT MATCHED THEN
+    INSERT(
+	APPLY_NUM,
+	APPLY_TITLE,
+	APPLY_DETAIL,
+	APPLY_USE,
+	APPLY_IMG,
+	APPLY_POS,
+	APPLY_PRI,
+	APPLY_SIZE,
+	APPLY_TAG,
+	APPLY_OPT,
+	APPLY_ID,
+	APPLY_MODIFY,
+	APPLY_PERSON,
+	APPLY_HORIZON,
+	APPLY_VERTICAL,
+	APPLY_HEIGHT,
+	APPLY_RES_TYPE,
+	APPLY_SEAT,
+	APPLY_PARKING
+	)
+VALUES(
+	#{APPLY_NUM},
+	#{APPLY_TITLE},
+	#{APPLY_DETAIL},
+	#{APPLY_USE},
+	#{APPLY_IMG},
+	#{APPLY_POS},
+	#{APPLY_PRI},
+	#{APPLY_SIZE},
+	]]>
+	<if test="APPLY_TAG != null">
+    #{APPLY_TAG},
+    </if>
+    <if test="APPLY_TAG == null">
+    '',
+    </if>
+    <![CDATA[
+	#{APPLY_OPT},
+	#{USER_ID},
+	#{APPLY_MODIFY},
+	#{APPLY_PERSON},
+	#{APPLY_HORIZON},
+	#{APPLY_VERTICAL},
+	#{APPLY_HEIGHT},
+	#{APPLY_RES_TYPE},
+	#{APPLY_SEAT},
+	#{APPLY_PARKING}
+	)
+]]>
+</update>
+
+<!-- 공간등록 예약목록 (요일 TYPE == "DAY") -->
+<update id="updateResDayInfo" parameterType="hashmap">
+<![CDATA[
+MERGE INTO ARES_DAY
+USING DUAL
+   ON (SPACE_ID = #{APPLY_NUM})
+WHEN MATCHED THEN
+    UPDATE SET
+		A_MON = #{APPLY_DAY_LIST.MON},
+		A_TUE = #{APPLY_DAY_LIST.TUE},
+		A_WED = #{APPLY_DAY_LIST.WED},
+		A_THU = #{APPLY_DAY_LIST.THU},
+		A_FRI = #{APPLY_DAY_LIST.FRI},
+		A_SAT = #{APPLY_DAY_LIST.SAT},
+		A_SUN = #{APPLY_DAY_LIST.SUN}
+    
+WHEN NOT MATCHED THEN
+    INSERT(
+	SPACE_ID,
+	A_MON,
+	A_TUE,
+	A_WED,
+	A_THU,
+	A_FRI,
+	A_SAT,
+	A_SUN
+	)
+VALUES(
+	#{APPLY_NUM},
+	#{APPLY_DAY_LIST.MON},
+	#{APPLY_DAY_LIST.TUE},
+	#{APPLY_DAY_LIST.WED},
+	#{APPLY_DAY_LIST.THU},
+	#{APPLY_DAY_LIST.FRI},
+	#{APPLY_DAY_LIST.SAT},
+	#{APPLY_DAY_LIST.SUN}
+	)
+
+]]>
+</update>
+
+
+<!-- 공간등록 예약목록 (날짜 TYPE=="DATE") -->
+<update id="updateResDate" parameterType="hashmap">
+<![CDATA[
+MERGE INTO ARES_DATE
+USING DUAL
+   ON (SPACE_ID = #{SPACE_ID} AND A_DATE = #{DATE})
+WHEN MATCHED THEN
+    UPDATE SET
+    A_PRI = #{PRI}
+WHEN NOT MATCHED THEN
+INSERT(
+	SPACE_ID,
+	A_DATE,
+	A_PRI
+	)
+VALUES(
+	#{SPACE_ID},
+	#{DATE},
+	#{PRI}
+	)
+
+]]>
+</update>
+<!-- ==========================================공간 신청 글 예약(날짜)삭제 -->
+<update id="deleteResDate" parameterType="hashmap">
+	<![CDATA[
+		DELETE
+		FROM 
+			ARES_DATE 
+		WHERE 
+			SPACE_ID = #{APPLY_NUM}
+	]]>
+</update>
+
+	<select id="selectMyApplyList" parameterType="hashmap"
+		resultType="hashmap">
+	<include refid="common.pagingPre"></include>
+	<![CDATA[
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY APPLY_NUM DESC) RNUM,
+			APPLY_NUM,
+			APPLY_TITLE,
+			APPLY_SIZE,
+			APPLY_PRI,
+			APPLY_IMG
+		FROM
+			SPACE_APPLY_LIST
+		WHERE
+			APPLY_ID = #{USER_ID}
+	]]>
+	<include refid="common.pagingPost"></include>
+	</select>
+	
+	<select id="spaceQNAList" parameterType="hashmap" resultType="hashmap">
+	<include refid="common.pagingPre"></include>
+	<![CDATA[
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY QNA_NUM DESC) RNUM,
+			S.SPACE_ID,
+			SPACE_TITLE,
+			QNA_NUM,
+			QNA_TITLE,
+			QNA_CNT,
+			QNA_ANS
+		FROM 
+			SPACE_LIST S 
+		INNER JOIN 
+			SPACE_QNA_LIST Q
+		ON 
+			S.SPACE_ID = Q.SPACE_ID
+		WHERE 
+			SPACE_HOST = #{USER_ID} AND QNA_ANS = 'N' AND QNA_DEL = 'N'
+	]]>
+	<include refid="common.pagingPost"></include>
+	</select>
+	
+	<select id="spaceQNACompList" parameterType="hashmap" resultType="hashmap">
+	<include refid="common.pagingPre"></include>
+	<![CDATA[
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY QNA_NUM DESC) RNUM,
+			S.SPACE_ID,
+			SPACE_TITLE,
+			QNA_NUM,
+			QNA_TITLE,
+			QNA_CNT,
+			QNA_CMT,
+			QNA_ANS
+		FROM 
+			SPACE_LIST S 
+		INNER JOIN 
+			SPACE_QNA_LIST Q
+		ON 
+			S.SPACE_ID = Q.SPACE_ID
+		WHERE 
+			SPACE_HOST = #{USER_ID} AND QNA_ANS = 'Y' AND QNA_DEL = 'N'
+	]]>
+	<include refid="common.pagingPost"></include>
+	</select>
+	<!-- ===================공간글 수정, 삭제 ,보류==================== -->
+<!-- 	==================공간 등록 글 불러오기(수정) ================= -->
+	<select id="callSpaceBoard" parameterType="hashmap"
+		resultType="hashmap">
+	<![CDATA[
+		SELECT 
+			*
+		FROM
+			SPACE_LIST
+		WHERE
+			SPACE_ID = #{SPACE_ID}
+	]]>
+	</select>
+
+	<!-- =================공간 신청 글 불러오기(수정) =================== -->
+
+	<select id="callApplyBoard" parameterType="hashmap"
+		resultType="hashmap">
+	<![CDATA[
+		SELECT 
+			*
+		FROM
+			SPACE_APPLY_LIST
+		WHERE
+			APPLY_NUM = #{SPACE_ID}
+
+	]]>
+	</select>
+
+	<!-- =================게시물 보류 =================== -->
+	<update id="holdSpaceBoard" parameterType="hashmap">
+	<![CDATA[
+		UPDATE
+			SPACE_LIST
+		SET
+		]]>
+		<if test = 'HOLD.equals("N")'>
+			SPACE_HOLD = 'Y'
+		</if>
+		<if test = 'HOLD.equals("Y")'>
+			SPACE_HOLD = 'N'
+		</if>
+		
+		<![CDATA[
+		WHERE
+			SPACE_ID = #{SPACE_ID}
+
+	]]>
+	</update>
+
+	<!-- =================게시물 보류 취소 =================== -->
+	<update id="cancleHoldSpaceBoard" parameterType="hashmap">
+	<![CDATA[
+		UPDATE
+			SPACE_LIST
+		SET
+			SPACE_HOLD = 'N'
+		WHERE
+			SPACE_ID = #{SPACE_ID}
+
+	]]>
+	</update>
+	<!-- =================================END================================= -->
+ <select id="selectResDate" parameterType="hashmap" resultType="hashmap">
+	<![CDATA[
+		SELECT 
+			RES_APPLY_DATE as RDATE 
+		FROM 
+			RES_LIST 
+		WHERE 
+			RES_SPACE_ID 
+		IN (
+			SELECT
+		 		SPACE_ID 
+		 	FROM 
+		 		SPACE_LIST
+		 	WHERE 
+		 		SPACE_HOST = #{USER_ID}
+		 	)
+	]]>
+</select>
+
+ <select id="searchResList" parameterType="hashmap" resultType="hashmap">
+	<![CDATA[
+		SELECT 
+			SPACE_ID,
+			SPACE_TITLE,
+			SPACE_IMG,
+			RES_APPLY_DATE,
+			RES_CONTENT,
+			RES_REQ,
+			RES_NAME,
+			USER_PHONE,
+			RES_EMAIL
+		FROM 
+			RES_LIST R 
+		JOIN 
+			SPACE_LIST S 
+		ON 
+			R.RES_SPACE_ID = S.SPACE_ID
+		WHERE 
+			S.SPACE_HOST = #{USER_ID} 
+		AND 
+			RES_APPLY_DATE BETWEEN #{START} AND #{END}
+	]]>
+</select>
+ 
+ <update id="spaceQNAComment" parameterType="hashmap">
+	<![CDATA[
+		UPDATE 
+			SPACE_QNA_LIST
+		SET 
+			QNA_CMT = #{QNA_CMT},
+			QNA_ANS = 'Y'
+		WHERE 
+			QNA_NUM = #{QNA_NUMBER}
+	]]>
+</update>
+ 
+<update id="deleteQNAComment" parameterType="hashmap">
+	<![CDATA[
+		UPDATE 
+			SPACE_QNA_LIST
+		SET
+			QNA_DEL = 'Y'
+		WHERE 
+			QNA_NUM = #{QNA_NUM}
+	]]>
+</update>
+ 
+ <select id="spaceReplyList" parameterType="hashmap" resultType="hashmap">
+ <include refid="common.pagingPre"></include>
+	<![CDATA[
+		SELECT
+			ROW_NUMBER() OVER(ORDER BY REPLY_NUM DESC) RNUM, 
+			S.SPACE_ID,
+			SPACE_TITLE,
+			REPLY_TITLE,
+			USER_ID,
+			REPLY_NUM,
+			REPLY_DATE,
+			REPLY_CNT,
+			REPLY_IMG
+		FROM 
+			SPACE_LIST S 
+		INNER JOIN 
+			REPLY_LIST R
+		ON 
+			S.SPACE_ID = R.SPACE_ID
+		WHERE 
+			SPACE_HOST = #{USER_ID} AND REPLY_DEL = 'N'
+	]]>
+	<include refid="common.pagingPost"></include>
+</select>
+ 
+ <update id="deleteReply" parameterType="hashmap">
+	<![CDATA[
+		UPDATE 
+			REPLY_LIST
+		SET 
+			REPLY_DEL = 'Y'
+		WHERE 
+			REPLY_NUM = #{REPLY_NUM}
+	]]>
+</update>
+
+ 
+<select id="selectMyResList" parameterType="hashmap" resultType="string">
+<![CDATA[
+	SELECT
+		S.SPACE_ID
+	FROM
+		SPACE_LIST S
+	INNER JOIN
+		RES_LIST R
+	ON
+		S.SPACE_ID = R.RES_SPACE_ID
+	WHERE
+		SPACE_ID = #{SPACE_ID} 
+	AND RES_APPLY_DATE >= SYSDATE
+]]>
+</select>
+ </mapper>
